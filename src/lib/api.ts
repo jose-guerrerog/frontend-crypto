@@ -85,7 +85,7 @@ export class WebSocketService {
   private reconnectInterval = 5000; // 5 seconds
   private messageHandlers: ((message: any) => void)[] = [];
 
-  connect(url: string = 'ws://localhost:8000/ws/prices/'): Promise<void> {
+  connect(url: string = `${process.env.NEXT_PUBLIC_WS_URL}/prices/`): Promise<void> {
     return new Promise((resolve, reject) => {
       try {
         this.ws = new WebSocket(url);
