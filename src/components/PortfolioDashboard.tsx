@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlusCircle, Wallet, TrendingUp, TrendingDown, DollarSign, Target, Trash2 } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
+import { AddTransactionForm, TransactionType } from '@/types';
 
 export default function SimpleDashboard() {
   const {
@@ -16,11 +17,26 @@ export default function SimpleDashboard() {
     createPortfolio,
     deletePortfolio,
     selectPortfolio,
+    addTransaction,
   } = usePortfolio();
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [portfolioName, setPortfolioName] = useState('');
+  
+  console.log('portfolios')
+  console.log(portfolios)
+  // Transaction form state
+  const [transactionForm, setTransactionForm] = useState<AddTransactionForm>({
+    coin_id: '',
+    coin_name: '',
+    coin_symbol: '',
+    transaction_type: 'buy',
+    amount: '',
+    price_usd: '',
+  });
+  const [isSubmittingTransaction, setIsSubmittingTransaction] = useState(false);
+  const [transactionError, setTransactionError] = useState('');
 
   useEffect(() => {
     loadPortfolios();
@@ -36,6 +52,91 @@ export default function SimpleDashboard() {
       setShowCreateForm(false);
     } catch (error) {
       console.error('Failed to create portfolio:', error);
+    }
+  };
+
+  const handleCoinSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    console.log('🔍 Coin selected:', value);
+    
+    const coinMap: Record<string, { name: string; symbol: string }> = {
+      bitcoin: { name: 'Bitcoin', symbol: 'BTC' },
+      ethereum: { name: 'Ethereum', symbol: 'ETH' },
+      cardano: { name: 'Cardano', symbol: 'ADA' },
+      solana: { name: 'Solana', symbol: 'SOL' },
+      polkadot: { name: 'Polkadot', symbol: 'DOT' },
+    };
+
+    const selectedCoin = coinMap[value];
+    if (selectedCoin) {
+      setTransactionForm(prev => ({
+        ...prev,
+        coin_id: value,
+        coin_name: selectedCoin.name,
+        coin_symbol: selectedCoin.symbol,
+      }));
+    }
+  };
+
+  const handleTransactionSubmit = async (e: React.FormEvent) => {
+    console.log('🔍 Transaction form submitted!');
+    e.preventDefault();
+    
+    if (!selectedPortfolio) {
+      console.error('❌ No portfolio selected');
+      return;
+    }
+
+    console.log('🔍 Form data:', transactionForm);
+
+    // Validation
+    if (!transactionForm.coin_id || !transactionForm.amount || !transactionForm.price_usd) {
+      setTransactionError('Please fill in all required fields');
+      return;
+    }
+
+    if (parseFloat(transactionForm.amount) <= 0 || parseFloat(transactionForm.price_usd) <= 0) {
+      setTransactionError('Amount and price must be greater than 0');
+      return;
+    }
+
+    setIsSubmittingTransaction(true);
+    setTransactionError('');
+
+    try {
+      console.log('🔍 Calling addTransaction...');
+      await addTransaction(selectedPortfolio.id, {
+        coin_id: transactionForm.coin_id,
+        coin_name: transactionForm.coin_name,
+        coin_symbol: transactionForm.coin_symbol,
+        amount: parseFloat(transactionForm.amount),
+        price_usd: parseFloat(transactionForm.price_usd),
+        transaction_type: transactionForm.transaction_type,
+      });
+
+      console.log('✅ Transaction added successfully!');
+      
+      // Refresh portfolio data to show new transaction
+      // await loadPortfolios();
+      await selectPortfolio(selectedPortfolio.id)
+      // const updated = await ApiService.getPortfolio(selectedPortfolio.id);
+      // setSelectedPortfolio(updated);
+
+      // Reset form and close modal
+      setTransactionForm({
+        coin_id: '',
+        coin_name: '',
+        coin_symbol: '',
+        transaction_type: 'buy',
+        amount: '',
+        price_usd: '',
+      });
+      setShowTransactionForm(false);
+    } catch (error: any) {
+      console.error('❌ Failed to add transaction:', error);
+      setTransactionError(error?.message || 'Failed to add transaction');
+    } finally {
+      setIsSubmittingTransaction(false);
     }
   };
 
@@ -213,7 +314,10 @@ export default function SimpleDashboard() {
                       {selectedPortfolio.name}
                     </h2>
                     <button
-                      onClick={() => setShowTransactionForm(true)}
+                      onClick={() => {
+                        console.log('🔍 Add Transaction button clicked!');
+                        setShowTransactionForm(true);
+                      }}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -412,7 +516,7 @@ export default function SimpleDashboard() {
           </div>
         )}
 
-        {/* Add Transaction Modal */}
+        {/* Add Transaction Modal - NOW FUNCTIONAL! */}
         {showTransactionForm && selectedPortfolio && (
           <div style={{
             position: 'fixed',
@@ -437,128 +541,171 @@ export default function SimpleDashboard() {
                 Add Transaction to {selectedPortfolio.name}
               </h3>
               
-              <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
-                  Cryptocurrency
-                </label>
-                <select style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '2px solid #e2e8f0',
-                  borderRadius: '6px',
-                  fontSize: '16px'
-                }}>
-                  <option value="">Select cryptocurrency</option>
-                  <option value="bitcoin">Bitcoin (BTC)</option>
-                  <option value="ethereum">Ethereum (ETH)</option>
-                  <option value="cardano">Cardano (ADA)</option>
-                  <option value="solana">Solana (SOL)</option>
-                  <option value="polkadot">Polkadot (DOT)</option>
-                </select>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
-                <div>
+              <form onSubmit={handleTransactionSubmit}>
+                <div style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
-                    Type
+                    Cryptocurrency *
                   </label>
-                  <select style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #e2e8f0',
-                    borderRadius: '6px',
-                    fontSize: '16px'
-                  }}>
-                    <option value="buy">Buy</option>
-                    <option value="sell">Sell</option>
+                  <select 
+                    value={transactionForm.coin_id}
+                    onChange={handleCoinSelect}
+                    style={{
+                      width: '100%',
+                      padding: '12px',
+                      border: '2px solid #e2e8f0',
+                      borderRadius: '6px',
+                      fontSize: '16px'
+                    }}
+                    required
+                  >
+                    <option value="">Select cryptocurrency</option>
+                    <option value="bitcoin">Bitcoin (BTC)</option>
+                    <option value="ethereum">Ethereum (ETH)</option>
+                    <option value="cardano">Cardano (ADA)</option>
+                    <option value="solana">Solana (SOL)</option>
+                    <option value="polkadot">Polkadot (DOT)</option>
                   </select>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
-                    Amount
-                  </label>
-                  <input
-                    type="number"
-                    step="0.00000001"
-                    placeholder="0.00"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '6px',
-                      fontSize: '16px'
-                    }}
-                  />
-                </div>
-              </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Type
+                    </label>
+                    <select 
+                      value={transactionForm.transaction_type}
+                      onChange={(e) => setTransactionForm(prev => ({ ...prev, transaction_type: e.target.value as TransactionType}))}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '6px',
+                        fontSize: '16px'
+                      }}
+                    >
+                      <option value="buy">Buy</option>
+                      <option value="sell">Sell</option>
+                    </select>
+                  </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
-                    Price per coin ($)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '6px',
-                      fontSize: '16px'
-                    }}
-                  />
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Amount *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.00000001"
+                      placeholder="0.00"
+                      value={transactionForm.amount}
+                      onChange={(e) => setTransactionForm(prev => ({ ...prev, amount: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '6px',
+                        fontSize: '16px'
+                      }}
+                      required
+                    />
+                  </div>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
-                    Date
-                  </label>
-                  <input
-                    type="datetime-local"
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e2e8f0',
-                      borderRadius: '6px',
-                      fontSize: '16px'
-                    }}
-                  />
-                </div>
-              </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Price per coin ($) *
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={transactionForm.price_usd}
+                      onChange={(e) => setTransactionForm(prev => ({ ...prev, price_usd: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '6px',
+                        fontSize: '16px'
+                      }}
+                      required
+                    />
+                  </div>
 
-              <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
-                <button
-                  type="button"
-                  onClick={() => setShowTransactionForm(false)}
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#f1f5f9',
-                    color: '#475569',
-                    border: 'none',
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500' }}>
+                      Date
+                    </label>
+                    <input
+                      type="datetime-local"
+                      style={{
+                        width: '100%',
+                        padding: '12px',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '6px',
+                        fontSize: '16px'
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Error Display */}
+                {transactionError && (
+                  <div style={{
+                    backgroundColor: '#fee2e2',
+                    color: '#dc2626',
+                    padding: '12px',
                     borderRadius: '6px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  style={{
-                    padding: '10px 16px',
-                    backgroundColor: '#3b82f6',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontWeight: '500'
-                  }}
-                >
-                  Add Transaction
-                </button>
-              </div>
+                    marginBottom: '16px',
+                    fontSize: '14px'
+                  }}>
+                    {transactionError}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowTransactionForm(false);
+                      setTransactionError('');
+                      setTransactionForm({
+                        coin_id: '',
+                        coin_name: '',
+                        coin_symbol: '',
+                        transaction_type: 'buy',
+                        amount: '',
+                        price_usd: '',
+                      });
+                    }}
+                    style={{
+                      padding: '10px 16px',
+                      backgroundColor: '#f1f5f9',
+                      color: '#475569',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingTransaction}
+                    style={{
+                      padding: '10px 16px',
+                      backgroundColor: isSubmittingTransaction ? '#9ca3af' : '#3b82f6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '6px',
+                      cursor: isSubmittingTransaction ? 'not-allowed' : 'pointer',
+                      fontWeight: '500'
+                    }}
+                  >
+                    {isSubmittingTransaction ? 'Adding...' : 'Add Transaction'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

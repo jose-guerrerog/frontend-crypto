@@ -1,3 +1,5 @@
+export type TransactionType = "buy" | "sell";
+
 export interface Portfolio {
   id: string;
   name: string;
@@ -13,7 +15,7 @@ export interface Transaction {
   coin_symbol: string;
   amount: number;
   price_usd: number;
-  transaction_type: 'buy' | 'sell';
+  transaction_type: TransactionType;
   timestamp: string;
   total_value: number;
 }
@@ -76,5 +78,5 @@ export interface AddTransactionForm {
   coin_symbol: string;
   amount: string;
   price_usd: string;
-  transaction_type: 'buy' | 'sell';
+  transaction_type: TransactionType;
 }

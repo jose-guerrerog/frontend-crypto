@@ -54,6 +54,13 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
       } catch (error) {
         console.error('Search failed:', error);
         setSearchResults([]);
+        // Show some default coins if search fails
+        setSearchResults([
+          { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', thumb: '', market_cap_rank: 1 },
+          { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', thumb: '', market_cap_rank: 2 },
+          { id: 'cardano', name: 'Cardano', symbol: 'ADA', thumb: '', market_cap_rank: 3 },
+        ]);
+        setShowResults(true);
       } finally {
         setIsSearching(false);
       }
@@ -88,6 +95,11 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
       }
     } catch (error) {
       console.error('Failed to fetch price:', error);
+      // Set a default price if fetch fails
+      setFormData(prev => ({
+        ...prev,
+        price_usd: '1.00',
+      }));
     }
   };
 
@@ -111,6 +123,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log('sent')
     e.preventDefault();
     
     if (!validateForm()) {
@@ -118,6 +131,8 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
     }
 
     setIsSubmitting(true);
+    setErrors({});
+    
     try {
       await addTransaction(portfolioId, {
         coin_id: formData.coin_id,
@@ -127,9 +142,14 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
         price_usd: parseFloat(formData.price_usd),
         transaction_type: formData.transaction_type,
       });
+      
+      // Success - close the form
       onClose();
-    } catch (error) {
-      setErrors({ submit: 'Failed to add transaction. Please try again.' });
+    } catch (error: any) {
+      console.error('Failed to add transaction:', error);
+      setErrors({ 
+        submit: error?.response?.data?.message || error?.message || 'Failed to add transaction. Please check your connection and try again.' 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -147,8 +167,22 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
     ? parseFloat(formData.amount) * parseFloat(formData.price_usd)
     : 0;
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+        setShowResults(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onClick={(e) => {
+      if (e.target === e.currentTarget) onClose();
+    }}>
       <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Add Transaction</h3>
@@ -162,26 +196,28 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Cryptocurrency Search */}
-          <div className="relative">
+          <div className="relative" ref={searchInputRef}>
             <label htmlFor="coin-search" className="block text-sm font-medium text-gray-700 mb-2">
               Cryptocurrency
             </label>
             <div className="relative">
               <input
-                ref={searchInputRef}
                 type="text"
                 id="coin-search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => searchResults.length > 0 && setShowResults(true)}
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                onFocus={() => {
+                  if (searchResults.length > 0) setShowResults(true);
+                  if (!searchQuery) setSearchQuery('bitcoin');
+                }}
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Search for a cryptocurrency..."
                 autoComplete="off"
               />
               <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
               {isSearching && (
                 <div className="absolute right-3 top-2.5">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
                 </div>
               )}
             </div>
@@ -214,7 +250,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
             )}
             
             {errors.coin && (
-              <p className="mt-1 text-sm text-danger-600">{errors.coin}</p>
+              <p className="mt-1 text-sm text-red-600">{errors.coin}</p>
             )}
           </div>
 
@@ -227,7 +263,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
               id="transaction-type"
               value={formData.transaction_type}
               onChange={(e) => handleInputChange('transaction_type', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="buy">Buy</option>
               <option value="sell">Sell</option>
@@ -246,11 +282,11 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
               min="0"
               value={formData.amount}
               onChange={(e) => handleInputChange('amount', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="0.00"
             />
             {errors.amount && (
-              <p className="mt-1 text-sm text-danger-600">{errors.amount}</p>
+              <p className="mt-1 text-sm text-red-600">{errors.amount}</p>
             )}
           </div>
 
@@ -266,11 +302,11 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
               min="0"
               value={formData.price_usd}
               onChange={(e) => handleInputChange('price_usd', e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="0.00"
             />
             {errors.price_usd && (
-              <p className="mt-1 text-sm text-danger-600">{errors.price_usd}</p>
+              <p className="mt-1 text-sm text-red-600">{errors.price_usd}</p>
             )}
           </div>
 
@@ -288,8 +324,8 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
 
           {/* Submit Error */}
           {errors.submit && (
-            <div className="bg-danger-50 border border-danger-200 rounded-md p-3">
-              <p className="text-sm text-danger-600">{errors.submit}</p>
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <p className="text-sm text-red-600">{errors.submit}</p>
             </div>
           )}
 
@@ -305,7 +341,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
             <button
               type="submit"
               disabled={isSubmitting || !formData.coin_id}
-              className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? 'Adding...' : `Add ${formData.transaction_type === 'buy' ? 'Buy' : 'Sell'} Transaction`}
             </button>

@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
-import { Portfolio, Transaction, CoinPrice, PortfolioMetrics } from '@/types';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
+import { Portfolio, Transaction, CoinPrice, PortfolioMetrics, AddTransactionForm } from '@/types';
 import { ApiService, WebSocketService } from '@/lib/api';
 
 interface PortfolioState {
@@ -12,6 +12,7 @@ interface PortfolioState {
   isLoading: boolean;
   error: string | null;
   wsConnected: boolean;
+  backendAvailable: boolean;
 }
 
 type PortfolioAction =
@@ -25,7 +26,8 @@ type PortfolioAction =
   | { type: 'REMOVE_TRANSACTION'; payload: { portfolioId: string; transactionId: string } }
   | { type: 'SET_PORTFOLIO_METRICS'; payload: PortfolioMetrics | null }
   | { type: 'UPDATE_COIN_PRICES'; payload: Record<string, CoinPrice> }
-  | { type: 'SET_WS_CONNECTED'; payload: boolean };
+  | { type: 'SET_WS_CONNECTED'; payload: boolean }
+  | { type: 'SET_BACKEND_AVAILABLE'; payload: boolean };
 
 const initialState: PortfolioState = {
   portfolios: [],
@@ -35,6 +37,7 @@ const initialState: PortfolioState = {
   isLoading: false,
   error: null,
   wsConnected: false,
+  backendAvailable: true,
 };
 
 function portfolioReducer(state: PortfolioState, action: PortfolioAction): PortfolioState {
@@ -46,13 +49,14 @@ function portfolioReducer(state: PortfolioState, action: PortfolioAction): Portf
       return { ...state, error: action.payload, isLoading: false };
     
     case 'SET_PORTFOLIOS':
-      return { ...state, portfolios: action.payload, isLoading: false };
+      return { ...state, portfolios: action.payload, isLoading: false, error: null };
     
     case 'ADD_PORTFOLIO':
       return { 
         ...state, 
         portfolios: [...state.portfolios, action.payload], 
-        isLoading: false 
+        isLoading: false,
+        error: null 
       };
     
     case 'DELETE_PORTFOLIO':
@@ -60,11 +64,12 @@ function portfolioReducer(state: PortfolioState, action: PortfolioAction): Portf
         ...state,
         portfolios: state.portfolios.filter(p => p.id !== action.payload),
         selectedPortfolio: state.selectedPortfolio?.id === action.payload ? null : state.selectedPortfolio,
-        isLoading: false
+        isLoading: false,
+        error: null
       };
     
     case 'SET_SELECTED_PORTFOLIO':
-      return { ...state, selectedPortfolio: action.payload };
+      return { ...state, selectedPortfolio: action.payload, error: null };
     
     case 'ADD_TRANSACTION':
       const updatedPortfolios = state.portfolios.map(portfolio => {
@@ -87,7 +92,8 @@ function portfolioReducer(state: PortfolioState, action: PortfolioAction): Portf
               transactions: [...(state.selectedPortfolio.transactions || []), action.payload.transaction],
               transaction_count: state.selectedPortfolio.transaction_count + 1
             }
-          : state.selectedPortfolio
+          : state.selectedPortfolio,
+        error: null
       };
     
     case 'REMOVE_TRANSACTION':
@@ -111,7 +117,8 @@ function portfolioReducer(state: PortfolioState, action: PortfolioAction): Portf
               transactions: state.selectedPortfolio.transactions?.filter(t => t.id !== action.payload.transactionId) || [],
               transaction_count: Math.max(0, state.selectedPortfolio.transaction_count - 1)
             }
-          : state.selectedPortfolio
+          : state.selectedPortfolio,
+        error: null
       };
     
     case 'SET_PORTFOLIO_METRICS':
@@ -122,6 +129,9 @@ function portfolioReducer(state: PortfolioState, action: PortfolioAction): Portf
     
     case 'SET_WS_CONNECTED':
       return { ...state, wsConnected: action.payload };
+    
+    case 'SET_BACKEND_AVAILABLE':
+      return { ...state, backendAvailable: action.payload };
     
     default:
       return state;
@@ -145,6 +155,10 @@ interface PortfolioContextValue extends PortfolioState {
   // Real-time data
   subscribeToCoinPrices: (coinIds: string[]) => void;
   unsubscribeFromCoinPrices: (coinIds: string[]) => void;
+  
+  // Utils
+  clearError: () => void;
+  checkBackendStatus: () => Promise<void>;
 }
 
 const PortfolioContext = createContext<PortfolioContextValue | null>(null);
@@ -154,8 +168,25 @@ let wsService: WebSocketService | null = null;
 export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(portfolioReducer, initialState);
 
+  // Check backend availability
+  const checkBackendStatus = useCallback(async () => {
+    try {
+      const isAvailable = await ApiService.healthCheck();
+      dispatch({ type: 'SET_BACKEND_AVAILABLE', payload: isAvailable });
+      if (!isAvailable) {
+        dispatch({ type: 'SET_ERROR', payload: 'Backend server is not available. Using offline mode.' });
+      }
+    } catch (error) {
+      dispatch({ type: 'SET_BACKEND_AVAILABLE', payload: false });
+      dispatch({ type: 'SET_ERROR', payload: 'Backend server is not available. Using offline mode.' });
+    }
+  }, []);
+
   // Initialize WebSocket connection
   useEffect(() => {
+    // Check backend status first
+    checkBackendStatus();
+
     wsService = new WebSocketService();
     
     const handleWebSocketMessage = (message: any) => {
@@ -166,12 +197,13 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
 
     wsService.onMessage(handleWebSocketMessage);
     
+    // Try to connect to WebSocket, but don't fail if it's not available
     wsService.connect()
       .then(() => {
         dispatch({ type: 'SET_WS_CONNECTED', payload: true });
       })
       .catch((error) => {
-        console.error('Failed to connect to WebSocket:', error);
+        console.warn('WebSocket connection failed, real-time updates disabled:', error);
         dispatch({ type: 'SET_WS_CONNECTED', payload: false });
       });
 
@@ -181,43 +213,60 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         wsService.disconnect();
       }
     };
+  }, [checkBackendStatus]);
+
+  const clearError = useCallback(() => {
+    dispatch({ type: 'SET_ERROR', payload: null });
   }, []);
 
-  const loadPortfolios = async () => {
+  const loadPortfolios = useCallback(async () => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
     try {
       const portfolios = await ApiService.getPortfolios();
       dispatch({ type: 'SET_PORTFOLIOS', payload: portfolios });
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to load portfolios' });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load portfolios';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
+      // Still set empty portfolios array to avoid infinite loading
+      dispatch({ type: 'SET_PORTFOLIOS', payload: [] });
     }
-  };
+  }, []);
 
-  const createPortfolio = async (name: string): Promise<Portfolio> => {
+  const createPortfolio = useCallback(async (name: string): Promise<Portfolio> => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
     try {
       const portfolio = await ApiService.createPortfolio(name);
       dispatch({ type: 'ADD_PORTFOLIO', payload: portfolio });
       return portfolio;
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to create portfolio' });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to create portfolio';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const deletePortfolio = async (portfolioId: string) => {
+  const deletePortfolio = useCallback(async (portfolioId: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
     try {
       await ApiService.deletePortfolio(portfolioId);
       dispatch({ type: 'DELETE_PORTFOLIO', payload: portfolioId });
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to delete portfolio' });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to delete portfolio';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const selectPortfolio = async (portfolioId: string) => {
+  const selectPortfolio = useCallback(async (portfolioId: string) => {
     dispatch({ type: 'SET_LOADING', payload: true });
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
     try {
       const portfolio = await ApiService.getPortfolio(portfolioId);
       dispatch({ type: 'SET_SELECTED_PORTFOLIO', payload: portfolio });
@@ -230,16 +279,19 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
         const coinIds = [...new Set(portfolio.transactions.map(t => t.coin_id))];
         subscribeToCoinPrices(coinIds);
       }
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to load portfolio' });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to load portfolio';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const addTransaction = async (
+  const addTransaction = useCallback(async (
     portfolioId: string, 
     transaction: Omit<Transaction, 'id' | 'timestamp' | 'total_value'>
   ) => {
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
     try {
       const newTransaction = await ApiService.addTransaction(portfolioId, transaction);
       dispatch({ 
@@ -252,13 +304,16 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       
       // Subscribe to price updates for the new coin
       subscribeToCoinPrices([transaction.coin_id]);
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to add transaction' });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to add transaction';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const removeTransaction = async (portfolioId: string, transactionId: string) => {
+  const removeTransaction = useCallback(async (portfolioId: string, transactionId: string) => {
+    dispatch({ type: 'SET_ERROR', payload: null });
+    
     try {
       await ApiService.removeTransaction(portfolioId, transactionId);
       dispatch({ 
@@ -268,32 +323,34 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
       
       // Reload metrics after removing transaction
       await loadPortfolioMetrics(portfolioId);
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to remove transaction' });
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to remove transaction';
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const loadPortfolioMetrics = async (portfolioId: string) => {
+  const loadPortfolioMetrics = useCallback(async (portfolioId: string) => {
     try {
       const metrics = await ApiService.getPortfolioAnalytics(portfolioId);
       dispatch({ type: 'SET_PORTFOLIO_METRICS', payload: metrics });
-    } catch (error) {
-      dispatch({ type: 'SET_ERROR', payload: 'Failed to load portfolio metrics' });
+    } catch (error: any) {
+      console.warn('Failed to load portfolio metrics:', error);
+      // Don't show error for metrics, just log it
     }
-  };
+  }, []);
 
-  const subscribeToCoinPrices = (coinIds: string[]) => {
+  const subscribeToCoinPrices = useCallback((coinIds: string[]) => {
     if (wsService && wsService.isConnected()) {
       wsService.subscribe(coinIds);
     }
-  };
+  }, []);
 
-  const unsubscribeFromCoinPrices = (coinIds: string[]) => {
+  const unsubscribeFromCoinPrices = useCallback((coinIds: string[]) => {
     if (wsService && wsService.isConnected()) {
       wsService.unsubscribe(coinIds);
     }
-  };
+  }, []);
 
   const contextValue: PortfolioContextValue = {
     ...state,
@@ -306,6 +363,8 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     loadPortfolioMetrics,
     subscribeToCoinPrices,
     unsubscribeFromCoinPrices,
+    clearError,
+    checkBackendStatus,
   };
 
   return (
