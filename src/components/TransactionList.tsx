@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Trash2, TrendingUp, TrendingDown, Calendar, DollarSign } from 'lucide-react';
+import { Trash2, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import { Transaction } from '@/types';
 
@@ -10,70 +10,47 @@ export default function TransactionList() {
   const [sortBy, setSortBy] = useState<'timestamp' | 'coin_name' | 'amount' | 'total_value'>('timestamp');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  if (!selectedPortfolio || !selectedPortfolio.transactions) {
+  if (!selectedPortfolio || !selectedPortfolio.transactions?.length) {
     return (
-      <div className="bg-white shadow rounded-lg p-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Transactions</h3>
-        <div className="text-center py-8">
-          <p className="text-gray-500">No transactions found.</p>
-        </div>
+      <div style={{
+        backgroundColor: 'white',
+        padding: '24px',
+        borderRadius: '12px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        marginTop: '24px'
+      }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px' }}>Transactions</h3>
+        <p style={{ color: '#6b7280' }}>No transactions found.</p>
       </div>
     );
   }
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value);
-  };
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
-  };
 
   const handleSort = (field: typeof sortBy) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
+    if (sortBy === field) setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    else {
       setSortBy(field);
       setSortOrder('desc');
     }
   };
 
   const sortedTransactions = [...selectedPortfolio.transactions].sort((a, b) => {
-    let aValue: any, bValue: any;
+    const get = (field: typeof sortBy) => {
+      if (field === 'timestamp') return (t: Transaction) => new Date(t.timestamp).getTime();
+      if (field === 'coin_name') return (t: Transaction) => t.coin_name.toLowerCase();
+      return (t: Transaction) => (t as any)[field];
+    };
 
-    switch (sortBy) {
-      case 'timestamp':
-        aValue = new Date(a.timestamp).getTime();
-        bValue = new Date(b.timestamp).getTime();
-        break;
-      case 'coin_name':
-        aValue = a.coin_name.toLowerCase();
-        bValue = b.coin_name.toLowerCase();
-        break;
-      case 'amount':
-        aValue = a.amount;
-        bValue = b.amount;
-        break;
-      case 'total_value':
-        aValue = a.total_value;
-        bValue = b.total_value;
-        break;
-      default:
-        return 0;
-    }
-
-    if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
-    if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
-    return 0;
+    const aVal = get(sortBy)(a), bVal = get(sortBy)(b);
+    return (aVal < bVal ? -1 : aVal > bVal ? 1 : 0) * (sortOrder === 'asc' ? 1 : -1);
   });
 
   const handleRemoveTransaction = async (transactionId: string) => {
@@ -85,176 +62,125 @@ export default function TransactionList() {
       }
     }
   };
-
-  const getCurrentValue = (transaction: Transaction) => {
-    const currentPrice = coinPrices[transaction.coin_id];
-    if (currentPrice) {
-      return transaction.amount * currentPrice.current_price;
-    }
-    return null;
-  };
-
-  const getProfitLoss = (transaction: Transaction) => {
-    const currentValue = getCurrentValue(transaction);
-    if (currentValue !== null) {
-      const originalValue = transaction.total_value;
-      return {
-        amount: currentValue - originalValue,
-        percentage: ((currentValue - originalValue) / originalValue) * 100,
-      };
-    }
-    return null;
+  
+  const getProfitLoss = (t: Transaction) => {
+    const price = coinPrices[t.coin_id]?.current_price;
+    if (!price) return null;
+    const curr = t.amount * price;
+    const diff = curr - t.total_value;
+    return {
+      amount: diff,
+      percent: (diff / t.total_value) * 100
+    };
   };
 
   const SortButton = ({ field, children }: { field: typeof sortBy; children: React.ReactNode }) => (
     <button
       onClick={() => handleSort(field)}
-      className={`text-left font-medium ${
-        sortBy === field ? 'text-primary-600' : 'text-gray-900'
-      } hover:text-primary-600 transition-colors`}
+      style={{
+        fontWeight: 'bold',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+        color: sortBy === field ? '#3b82f6' : '#111827'
+      }}
     >
-      {children}
-      {sortBy === field && (
-        <span className="ml-1">
-          {sortOrder === 'asc' ? '↑' : '↓'}
-        </span>
-      )}
+      {children}{sortBy === field ? (sortOrder === 'asc' ? ' ↑' : ' ↓') : ''}
     </button>
   );
 
   return (
-    <div className="bg-white shadow rounded-lg p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h3 className="text-lg font-medium text-gray-900">Transactions</h3>
-        <div className="text-sm text-gray-500">
+    <div style={{
+      backgroundColor: 'white',
+      padding: '24px',
+      borderRadius: '12px',
+      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+      marginTop: '24px'
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Transactions</h3>
+        <p style={{ color: '#6b7280', fontSize: '14px' }}>
           {selectedPortfolio.transactions.length} transaction{selectedPortfolio.transactions.length !== 1 ? 's' : ''}
-        </div>
+        </p>
       </div>
 
-      {selectedPortfolio.transactions.length === 0 ? (
-        <div className="text-center py-8">
-          <DollarSign className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No transactions</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Add your first transaction to start tracking your portfolio.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <SortButton field="coin_name">Cryptocurrency</SortButton>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <SortButton field="amount">Amount</SortButton>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Price
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <SortButton field="total_value">Total Value</SortButton>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Current P&L
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  <SortButton field="timestamp">Date</SortButton>
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {sortedTransactions.map((transaction) => {
-                const profitLoss = getProfitLoss(transaction);
-                const currentValue = getCurrentValue(transaction);
-                
-                return (
-                  <tr key={transaction.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">
-                            {transaction.coin_name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {transaction.coin_symbol}
-                          </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>
+              <th style={{ padding: '12px' }}><SortButton field="coin_name">Cryptocurrency</SortButton></th>
+              <th style={{ padding: '12px' }}>Type</th>
+              <th style={{ padding: '12px' }}><SortButton field="amount">Amount</SortButton></th>
+              <th style={{ padding: '12px' }}>Price</th>
+              <th style={{ padding: '12px' }}><SortButton field="total_value">Total Value</SortButton></th>
+              <th style={{ padding: '12px' }}>Current P&L</th>
+              <th style={{ padding: '12px' }}><SortButton field="timestamp">Date</SortButton></th>
+              <th style={{ padding: '12px' }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sortedTransactions.map((tx) => {
+              const pnl = getProfitLoss(tx);
+              return (
+                <tr key={tx.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                  <td style={{ padding: '12px' }}>
+                    <div style={{ fontWeight: 500 }}>{tx.coin_name}</div>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{tx.coin_symbol}</div>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    <span style={{
+                      padding: '4px 8px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      backgroundColor: tx.transaction_type === 'buy' ? '#dcfce7' : '#fee2e2',
+                      color: tx.transaction_type === 'buy' ? '#15803d' : '#b91c1c',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      {tx.transaction_type === 'buy' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                      {tx.transaction_type.toUpperCase()}
+                    </span>
+                  </td>
+                  <td style={{ padding: '12px' }}>{tx.amount.toFixed(2)}</td>
+                  <td style={{ padding: '12px' }}>{formatCurrency(tx.price_usd)}</td>
+                  <td style={{ padding: '12px' }}>{formatCurrency(tx.total_value)}</td>
+                  <td style={{ padding: '12px' }}>
+                    {pnl ? (
+                      <div style={{ color: pnl.amount >= 0 ? '#16a34a' : '#dc2626' }}>
+                        {pnl.amount >= 0 ? '+' : ''}{formatCurrency(pnl.amount)}
+                        <div style={{ fontSize: '12px' }}>
+                          ({pnl.percent >= 0 ? '+' : ''}{pnl.percent.toFixed(2)}%)
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          transaction.transaction_type === 'buy'
-                            ? 'bg-success-100 text-success-800'
-                            : 'bg-danger-100 text-danger-800'
-                        }`}
-                      >
-                        {transaction.transaction_type === 'buy' ? (
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                        ) : (
-                          <TrendingDown className="w-3 h-3 mr-1" />
-                        )}
-                        {transaction.transaction_type.toUpperCase()}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {transaction.amount.toLocaleString('en-US', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 8,
-                      })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(transaction.price_usd)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {formatCurrency(transaction.total_value)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {profitLoss ? (
-                        <div className={`${
-                          profitLoss.amount >= 0 ? 'text-success-600' : 'text-danger-600'
-                        }`}>
-                          <div className="font-medium">
-                            {profitLoss.amount >= 0 ? '+' : ''}{formatCurrency(profitLoss.amount)}
-                          </div>
-                          <div className="text-xs">
-                            ({profitLoss.amount >= 0 ? '+' : ''}{profitLoss.percentage.toFixed(2)}%)
-                          </div>
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Calendar className="w-4 h-4 mr-1" />
-                        {formatDate(transaction.timestamp)}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => handleRemoveTransaction(transaction.id)}
-                        className="text-danger-600 hover:text-danger-900 transition-colors"
-                        title="Remove transaction"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+                    ) : '-'}
+                  </td>
+                  <td style={{ padding: '12px', fontSize: '14px', color: '#4b5563' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Calendar size={14} />{formatDate(tx.timestamp)}
+                    </div>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    <button
+                      onClick={() => handleRemoveTransaction(tx.id)}
+                      style={{
+                        border: 'none',
+                        backgroundColor: 'transparent',
+                        color: '#dc2626',
+                        cursor: 'pointer'
+                      }}
+                      title="Remove"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

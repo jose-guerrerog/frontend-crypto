@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { PlusCircle, Wallet, TrendingUp, TrendingDown, DollarSign, Target, Trash2 } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
 import { AddTransactionForm, TransactionType } from '@/types';
+import TransactionList from '@/components/TransactionList';
+import PortfolioMetrics from '@/components/PortfolioMetrics';
 
 export default function SimpleDashboard() {
   const {
@@ -336,72 +338,8 @@ export default function SimpleDashboard() {
                     </button>
                   </div>
 
-                  {/* Metrics Cards */}
-                  {portfolioMetrics && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-                      
-                      {/* Total Value */}
-                      <div style={{
-                        backgroundColor: '#f8fafc',
-                        padding: '20px',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                          <DollarSign size={20} style={{ color: '#64748b', marginRight: '8px' }} />
-                          <span style={{ fontSize: '14px', fontWeight: '500', color: '#64748b' }}>Total Value</span>
-                        </div>
-                        <p style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>
-                          {formatCurrency(portfolioMetrics.total_value)}
-                        </p>
-                      </div>
+                  <PortfolioMetrics />
 
-                      {/* Total Cost */}
-                      <div style={{
-                        backgroundColor: '#f8fafc',
-                        padding: '20px',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                          <Target size={20} style={{ color: '#64748b', marginRight: '8px' }} />
-                          <span style={{ fontSize: '14px', fontWeight: '500', color: '#64748b' }}>Total Cost</span>
-                        </div>
-                        <p style={{ fontSize: '28px', fontWeight: 'bold', margin: 0 }}>
-                          {formatCurrency(portfolioMetrics.total_cost)}
-                        </p>
-                      </div>
-
-                      {/* P&L */}
-                      <div style={{
-                        backgroundColor: '#f8fafc',
-                        padding: '20px',
-                        borderRadius: '8px'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                          {portfolioMetrics.total_profit_loss >= 0 ? (
-                            <TrendingUp size={20} style={{ color: '#22c55e', marginRight: '8px' }} />
-                          ) : (
-                            <TrendingDown size={20} style={{ color: '#ef4444', marginRight: '8px' }} />
-                          )}
-                          <span style={{ fontSize: '14px', fontWeight: '500', color: '#64748b' }}>P&L</span>
-                        </div>
-                        <p style={{ 
-                          fontSize: '28px', 
-                          fontWeight: 'bold', 
-                          margin: '0 0 4px 0',
-                          color: portfolioMetrics.total_profit_loss >= 0 ? '#22c55e' : '#ef4444'
-                        }}>
-                          {formatCurrency(portfolioMetrics.total_profit_loss)}
-                        </p>
-                        <p style={{ 
-                          fontSize: '14px',
-                          margin: 0,
-                          color: portfolioMetrics.total_profit_loss >= 0 ? '#22c55e' : '#ef4444'
-                        }}>
-                          {portfolioMetrics.profit_loss_percentage >= 0 ? '+' : ''}{portfolioMetrics.profit_loss_percentage.toFixed(2)}%
-                        </p>
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Transactions Section */}
@@ -414,9 +352,9 @@ export default function SimpleDashboard() {
                   <h3 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '20px' }}>
                     Recent Transactions
                   </h3>
-                  <p style={{ color: '#64748b' }}>
-                    Transaction list component would go here...
-                  </p>
+                  <div>
+    <TransactionList />
+  </div>
                 </div>
 
               </div>
