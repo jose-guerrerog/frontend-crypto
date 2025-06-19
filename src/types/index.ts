@@ -1,7 +1,7 @@
 export type TransactionType = "buy" | "sell";
 
 export interface Portfolio {
-  id: string;
+  id: number;
   name: string;
   created_at: string;
   transaction_count: number;

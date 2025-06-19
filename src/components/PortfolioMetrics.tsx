@@ -1,9 +1,10 @@
-'use client';
+// components/PortfolioMetrics.tsx
+"use client";
 
 import React from 'react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip
+  XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line
 } from 'recharts';
 import { TrendingUp, TrendingDown, Award, AlertTriangle } from 'lucide-react';
 import { usePortfolio } from '@/contexts/PortfolioContext';
@@ -14,7 +15,7 @@ const COLORS = [
 ];
 
 export default function PortfolioMetrics() {
-  const { portfolioMetrics, isLoading } = usePortfolio();
+  const { portfolioMetrics, isLoading, valueHistory } = usePortfolio();
 
   if (isLoading || !portfolioMetrics) return null;
 
@@ -26,7 +27,7 @@ export default function PortfolioMetrics() {
   const assetAllocationData = Object.entries(portfolioMetrics.asset_allocation).map(([asset, percentage]) => ({
     name: asset,
     value: percentage,
-    formatted: `${percentage.toFixed(1)}%`
+    formatted: typeof percentage === 'number' ? `${percentage.toFixed(1)}%` : '' /// TODO: Change to appropriate value 
   }));
 
   const performanceData = [
@@ -47,10 +48,7 @@ export default function PortfolioMetrics() {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div style={{
-          backgroundColor: 'white', padding: '12px', border: '1px solid #e2e8f0',
-          borderRadius: '6px', fontSize: '14px'
-        }}>
+        <div style={{ backgroundColor: 'white', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px' }}>
           <p>{payload[0].name}</p>
           <p>{payload[0].value.toFixed(1)}%</p>
         </div>
@@ -63,10 +61,7 @@ export default function PortfolioMetrics() {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div style={{
-          backgroundColor: 'white', padding: '12px', border: '1px solid #e2e8f0',
-          borderRadius: '6px', fontSize: '14px'
-        }}>
+        <div style={{ backgroundColor: 'white', padding: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px' }}>
           <p>{data.coin}</p>
           <p>{formatPercentage(data.value)}</p>
           <p>{formatCurrency(data.amount)}</p>
@@ -77,51 +72,35 @@ export default function PortfolioMetrics() {
   };
 
   return (
-    <div style={{
-      backgroundColor: 'white',
-      padding: '24px',
-      borderRadius: '12px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      marginBottom: '24px'
-    }}>
+    <div style={{ backgroundColor: 'white', padding: '24px', borderRadius: '12px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginBottom: '24px' }}>
       <h3 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px' }}>Portfolio Analytics</h3>
 
-      {/* Performance Summary */}
+      {/* Best/Worst Performer Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-        {/* Best Performer */}
         {portfolioMetrics.best_performer && (
           <div style={{ backgroundColor: '#dcfce7', padding: '16px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
               <Award size={16} style={{ color: '#15803d', marginRight: '6px' }} />
               <span style={{ fontWeight: 500, color: '#15803d' }}>Best Performer</span>
             </div>
-            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>
-              {portfolioMetrics.best_performer.coin_symbol}
-            </p>
-            <p style={{ color: '#166534', fontSize: '14px' }}>
-              {formatPercentage(portfolioMetrics.best_performer.profit_loss_percentage)} ({formatCurrency(portfolioMetrics.best_performer.profit_loss)})
-            </p>
+            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>{portfolioMetrics.best_performer.coin_symbol}</p>
+            <p style={{ color: '#166534', fontSize: '14px' }}>{formatPercentage(portfolioMetrics.best_performer.profit_loss_percentage)} ({formatCurrency(portfolioMetrics.best_performer.profit_loss)})</p>
           </div>
         )}
 
-        {/* Worst Performer */}
         {portfolioMetrics.worst_performer && (
           <div style={{ backgroundColor: '#fee2e2', padding: '16px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
               <AlertTriangle size={16} style={{ color: '#b91c1c', marginRight: '6px' }} />
               <span style={{ fontWeight: 500, color: '#b91c1c' }}>Worst Performer</span>
             </div>
-            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>
-              {portfolioMetrics.worst_performer.coin_symbol}
-            </p>
-            <p style={{ color: '#b91c1c', fontSize: '14px' }}>
-              {formatPercentage(portfolioMetrics.worst_performer.profit_loss_percentage)} ({formatCurrency(portfolioMetrics.worst_performer.profit_loss)})
-            </p>
+            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>{portfolioMetrics.worst_performer.coin_symbol}</p>
+            <p style={{ color: '#b91c1c', fontSize: '14px' }}>{formatPercentage(portfolioMetrics.worst_performer.profit_loss_percentage)} ({formatCurrency(portfolioMetrics.worst_performer.profit_loss)})</p>
           </div>
         )}
       </div>
 
-      {/* Charts */}
+      {/* Charts Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', marginBottom: '32px' }}>
         {/* Pie Chart */}
         <div>
@@ -172,42 +151,36 @@ export default function PortfolioMetrics() {
         </div>
       </div>
 
-      {/* Summary Row */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '16px',
-        borderTop: '1px solid #e5e7eb',
-        paddingTop: '24px',
-        marginTop: '16px',
-        textAlign: 'center'
-      }}>
+      {/* Sparkline Chart */}
+      {valueHistory && valueHistory.length > 1 && (
+        <div style={{ marginBottom: '24px' }}>
+          <h4 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Portfolio Value Over Time</h4>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={valueHistory}>
+              <XAxis dataKey="timestamp" hide />
+              <Tooltip formatter={(v: number) => formatCurrency(v)} />
+              <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} dot={false} />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Summary Stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '16px', textAlign: 'center' }}>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>
-            {Object.keys(portfolioMetrics.asset_allocation).length}
-          </p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{Object.keys(portfolioMetrics.asset_allocation).length}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Assets</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>
-            {formatCurrency(portfolioMetrics.total_value)}
-          </p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics.total_value)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Value</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>
-            {formatCurrency(portfolioMetrics.total_cost)}
-          </p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics.total_cost)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Cost</p>
         </div>
         <div>
-          <p style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: portfolioMetrics.total_profit_loss >= 0 ? '#16a34a' : '#dc2626'
-          }}>
-            {formatPercentage(portfolioMetrics.profit_loss_percentage)}
-          </p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold', color: portfolioMetrics.total_profit_loss >= 0 ? '#16a34a' : '#dc2626' }}>{formatPercentage(portfolioMetrics.profit_loss_percentage)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Return</p>
         </div>
       </div>

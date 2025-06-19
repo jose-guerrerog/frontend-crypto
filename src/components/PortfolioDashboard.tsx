@@ -34,8 +34,8 @@ export default function SimpleDashboard() {
   const [showTransactionForm, setShowTransactionForm] = useState(false);
   const [portfolioName, setPortfolioName] = useState("");
 
-  console.log("portfolios");
-  console.log(portfolios);
+  // console.log("portfolios");
+  // console.log(portfolios);
   // Transaction form state
   const [transactionForm, setTransactionForm] = useState<AddTransactionForm>({
     coin_id: "",
@@ -313,9 +313,9 @@ export default function SimpleDashboard() {
                   display: "flex",
                   flexDirection: "column",
                   gap: "12px",
-                }}
+                }} /// TODO: remove that any
               >
-                {portfolios.map((portfolio) => (
+                {portfolios.map((portfolio: any) => (
                   <div
                     key={portfolio.id}
                     onClick={() => selectPortfolio(portfolio.id)}
