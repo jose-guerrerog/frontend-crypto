@@ -24,7 +24,7 @@ export default function PortfolioMetrics() {
 
   const formatPercentage = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 
-  const assetAllocationData = Object.entries(portfolioMetrics.asset_allocation).map(([asset, percentage]) => ({
+  const assetAllocationData = Object.entries(portfolioMetrics.asset_allocation ?? {}).map(([asset, percentage]) => ({
     name: asset,
     value: percentage,
     formatted: typeof percentage === 'number' ? `${percentage.toFixed(1)}%` : '' /// TODO: Change to appropriate value 
