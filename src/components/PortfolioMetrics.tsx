@@ -168,19 +168,19 @@ export default function PortfolioMetrics() {
       {/* Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '16px', textAlign: 'center' }}>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{Object.keys(portfolioMetrics.asset_allocation).length}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{Object.keys(portfolioMetrics?.asset_allocation ?? {}).length}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Assets</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics.total_value)}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics?.total_value ?? 0)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Value</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics.total_cost)}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics?.total_cost ?? 0)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Cost</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold', color: portfolioMetrics.total_profit_loss >= 0 ? '#16a34a' : '#dc2626' }}>{formatPercentage(portfolioMetrics.profit_loss_percentage)}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold', color: (portfolioMetrics?.total_profit_loss ?? 0) >= 0 ? '#16a34a' : '#dc2626' }}>{formatPercentage(portfolioMetrics?.profit_loss_percentage ?? 0)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Return</p>
         </div>
       </div>
