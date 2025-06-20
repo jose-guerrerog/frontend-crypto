@@ -1,7 +1,7 @@
 // components/PortfolioMetrics.tsx
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, LineChart, Line
@@ -17,31 +17,40 @@ const COLORS = [
 export default function PortfolioMetrics() {
   const { portfolioMetrics, isLoading, valueHistory } = usePortfolio();
 
-  if (isLoading || !portfolioMetrics) return null;
+  console.log("📊 portfolioMetrics in component:", portfolioMetrics);
+
+  useEffect(() => {
+    console.log("🔄 portfolioMetrics updated in component", portfolioMetrics);
+  }, [portfolioMetrics]);
+
+  if (isLoading) return <p>Loading portfolio metrics...</p>;
+  if (!portfolioMetrics?.metrics) return <p>No metrics found for this portfolio.</p>;
+
+  const { metrics, debug } = portfolioMetrics;
 
   const formatCurrency = (value: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(value);
 
   const formatPercentage = (value: number) => `${value >= 0 ? '+' : ''}${value.toFixed(2)}%`;
 
-  const assetAllocationData = Object.entries(portfolioMetrics.asset_allocation ?? {}).map(([asset, percentage]) => ({
+  const assetAllocationData = Object.entries(metrics.asset_allocation ?? {}).map(([asset, percentage]) => ({
     name: asset,
     value: percentage,
-    formatted: typeof percentage === 'number' ? `${percentage.toFixed(1)}%` : '' /// TODO: Change to appropriate value 
+    formatted: typeof percentage === 'number' ? `${percentage.toFixed(1)}%` : ''
   }));
 
   const performanceData = [
     {
       name: 'Best Performer',
-      coin: portfolioMetrics.best_performer?.coin_symbol || 'N/A',
-      value: portfolioMetrics.best_performer?.profit_loss_percentage || 0,
-      amount: portfolioMetrics.best_performer?.profit_loss || 0,
+      coin: metrics.best_performer?.coin_symbol || 'N/A',
+      value: metrics.best_performer?.profit_loss_percentage || 0,
+      amount: metrics.best_performer?.profit_loss || 0,
     },
     {
       name: 'Worst Performer',
-      coin: portfolioMetrics.worst_performer?.coin_symbol || 'N/A',
-      value: portfolioMetrics.worst_performer?.profit_loss_percentage || 0,
-      amount: portfolioMetrics.worst_performer?.profit_loss || 0,
+      coin: metrics.worst_performer?.coin_symbol || 'N/A',
+      value: metrics.worst_performer?.profit_loss_percentage || 0,
+      amount: metrics.worst_performer?.profit_loss || 0,
     }
   ];
 
@@ -77,25 +86,25 @@ export default function PortfolioMetrics() {
 
       {/* Best/Worst Performer Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '32px' }}>
-        {portfolioMetrics.best_performer && (
+        {metrics.best_performer && (
           <div style={{ backgroundColor: '#dcfce7', padding: '16px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
               <Award size={16} style={{ color: '#15803d', marginRight: '6px' }} />
               <span style={{ fontWeight: 500, color: '#15803d' }}>Best Performer</span>
             </div>
-            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>{portfolioMetrics.best_performer.coin_symbol}</p>
-            <p style={{ color: '#166534', fontSize: '14px' }}>{formatPercentage(portfolioMetrics.best_performer.profit_loss_percentage)} ({formatCurrency(portfolioMetrics.best_performer.profit_loss)})</p>
+            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>{metrics.best_performer.coin_symbol}</p>
+            <p style={{ color: '#166534', fontSize: '14px' }}>{formatPercentage(metrics.best_performer.profit_loss_percentage)} ({formatCurrency(metrics.best_performer.profit_loss)})</p>
           </div>
         )}
 
-        {portfolioMetrics.worst_performer && (
+        {metrics.worst_performer && (
           <div style={{ backgroundColor: '#fee2e2', padding: '16px', borderRadius: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
               <AlertTriangle size={16} style={{ color: '#b91c1c', marginRight: '6px' }} />
               <span style={{ fontWeight: 500, color: '#b91c1c' }}>Worst Performer</span>
             </div>
-            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>{portfolioMetrics.worst_performer.coin_symbol}</p>
-            <p style={{ color: '#b91c1c', fontSize: '14px' }}>{formatPercentage(portfolioMetrics.worst_performer.profit_loss_percentage)} ({formatCurrency(portfolioMetrics.worst_performer.profit_loss)})</p>
+            <p style={{ fontSize: '18px', fontWeight: 'bold', margin: '4px 0' }}>{metrics.worst_performer.coin_symbol}</p>
+            <p style={{ color: '#b91c1c', fontSize: '14px' }}>{formatPercentage(metrics.worst_performer.profit_loss_percentage)} ({formatCurrency(metrics.worst_performer.profit_loss)})</p>
           </div>
         )}
       </div>
@@ -151,36 +160,22 @@ export default function PortfolioMetrics() {
         </div>
       </div>
 
-      {/* Sparkline Chart */}
-      {valueHistory && valueHistory.length > 1 && (
-        <div style={{ marginBottom: '24px' }}>
-          <h4 style={{ fontSize: '16px', fontWeight: 500, marginBottom: '16px' }}>Portfolio Value Over Time</h4>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={valueHistory}>
-              <XAxis dataKey="timestamp" hide />
-              <Tooltip formatter={(v: number) => formatCurrency(v)} />
-              <Line type="monotone" dataKey="value" stroke="#3B82F6" strokeWidth={2} dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
       {/* Summary Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginTop: '16px', textAlign: 'center' }}>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{Object.keys(portfolioMetrics?.asset_allocation ?? {}).length}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{Object.keys(metrics?.asset_allocation ?? {}).length}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Assets</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics?.total_value ?? 0)}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(metrics?.total_value ?? 0)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Value</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(portfolioMetrics?.total_cost ?? 0)}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold' }}>{formatCurrency(metrics?.total_cost ?? 0)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Cost</p>
         </div>
         <div>
-          <p style={{ fontSize: '24px', fontWeight: 'bold', color: (portfolioMetrics?.total_profit_loss ?? 0) >= 0 ? '#16a34a' : '#dc2626' }}>{formatPercentage(portfolioMetrics?.profit_loss_percentage ?? 0)}</p>
+          <p style={{ fontSize: '24px', fontWeight: 'bold', color: (metrics?.total_profit_loss ?? 0) >= 0 ? '#16a34a' : '#dc2626' }}>{formatPercentage(metrics?.profit_loss_percentage ?? 0)}</p>
           <p style={{ fontSize: '14px', color: '#6b7280' }}>Total Return</p>
         </div>
       </div>

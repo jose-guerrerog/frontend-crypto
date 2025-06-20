@@ -234,6 +234,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   const loadPortfolioMetrics = useCallback(async (portfolioId: number) => {
     try {
       const metrics = await ApiService.getPortfolioAnalytics(portfolioId);
+      console.log('📊 Fetched portfolio metrics:', metrics);  // <--- Add this
       dispatch({ type: 'SET_PORTFOLIO_METRICS', payload: metrics });
     } catch (error: any) {
       console.warn('Failed to load portfolio metrics:', error);
