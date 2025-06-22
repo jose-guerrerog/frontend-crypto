@@ -97,7 +97,7 @@ export default function PortfolioDashboard() {
       });
       setShowTransactionForm(false);
     } catch (error: any) {
-      console.error("❌ Failed to add transaction:", error);
+      console.error("Failed to add transaction:", error);
       setTransactionError(error?.message || "Failed to add transaction");
     } finally {
       setIsSubmittingTransaction(false);
@@ -142,7 +142,6 @@ export default function PortfolioDashboard() {
         </div>
 
         <div className="grid grid-cols-[300px_1fr] gap-8">
-          {/* Sidebar */}
           <div className="bg-white p-6 rounded-xl shadow h-fit">
             <h2 className="text-lg font-semibold mb-5">Your Portfolios</h2>
             {portfolios.length === 0 ? (
@@ -231,40 +230,40 @@ export default function PortfolioDashboard() {
           </div>
         </div>
       </div>
+      {showCreateForm && (
+        <PortfolioModal
+          onClose={() => {
+            setShowCreateForm(false);
+            setPortfolioName("");
+          }}
+          onCreate={handleCreatePortfolio}
+          name={portfolioName}
+          setName={setPortfolioName}
+        />
+      )}
 
-      {/* Modals */}
-      <PortfolioModal
-        show={showCreateForm}
-        onClose={() => {
-          setShowCreateForm(false);
-          setPortfolioName("");
-        }}
-        onCreate={handleCreatePortfolio}
-        name={portfolioName}
-        setName={setPortfolioName}
-      />
-
-      <TransactionModal
-        show={showTransactionForm}
-        onClose={() => {
-          setShowTransactionForm(false);
-          setTransactionError("");
-          setTransactionForm({
-            coin_id: "",
-            coin_name: "",
-            coin_symbol: "",
-            transaction_type: "buy",
-            amount: "",
-            price_usd: "",
-          });
-        }}
-        onSubmit={handleTransactionSubmit}
-        form={transactionForm}
-        setForm={setTransactionForm}
-        isSubmitting={isSubmittingTransaction}
-        error={transactionError}
-        portfolioName={selectedPortfolio?.name || ""}
-      />
+      {showTransactionForm && (
+        <TransactionModal
+          onClose={() => {
+            setShowTransactionForm(false);
+            setTransactionError("");
+            setTransactionForm({
+              coin_id: "",
+              coin_name: "",
+              coin_symbol: "",
+              transaction_type: "buy",
+              amount: "",
+              price_usd: "",
+            });
+          }}
+          onSubmit={handleTransactionSubmit}
+          form={transactionForm}
+          setForm={setTransactionForm}
+          isSubmitting={isSubmittingTransaction}
+          error={transactionError}
+          portfolioName={selectedPortfolio?.name || ""}
+        />
+      )}
     </div>
   );
 }

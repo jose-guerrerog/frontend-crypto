@@ -2,7 +2,6 @@ import React from "react";
 import { AddTransactionForm, TransactionType } from "@/types";
 
 interface TransactionModalProps {
-  show: boolean;
   onClose: () => void;
   onSubmit: (e: React.FormEvent) => void;
   form: AddTransactionForm;
@@ -13,7 +12,6 @@ interface TransactionModalProps {
 }
 
 export default function TransactionModal({
-  show,
   onClose,
   onSubmit,
   form,
@@ -22,7 +20,6 @@ export default function TransactionModal({
   error,
   portfolioName,
 }: TransactionModalProps) {
-  if (!show) return null;
 
   const coinOptions = [
     { id: "bitcoin", name: "Bitcoin", symbol: "BTC" },

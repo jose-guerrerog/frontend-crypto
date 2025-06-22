@@ -1,7 +1,6 @@
 import React from "react";
 
 interface PortfolioModalProps {
-  show: boolean;
   onClose: () => void;
   onCreate: (e: React.FormEvent) => void;
   name: string;
@@ -9,14 +8,11 @@ interface PortfolioModalProps {
 }
 
 export default function PortfolioModal({
-  show,
   onClose,
   onCreate,
   name,
   setName,
 }: PortfolioModalProps) {
-  if (!show) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-white p-6 rounded-lg w-[400px] shadow-lg">
