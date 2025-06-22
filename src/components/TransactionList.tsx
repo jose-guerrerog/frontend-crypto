@@ -113,8 +113,7 @@ export default function TransactionList() {
               <th style={{ padding: '12px' }}><SortButton field="amount">Amount</SortButton></th>
               <th style={{ padding: '12px' }}>Price</th>
               <th style={{ padding: '12px' }}><SortButton field="total_value">Total Value</SortButton></th>
-              <th style={{ padding: '12px' }}>Current P&L</th>
-              <th style={{ padding: '12px' }}><SortButton field="timestamp">Date</SortButton></th>
+              <th style={{ padding: '12px' }}>Date</th>
               <th style={{ padding: '12px' }}>Actions</th>
             </tr>
           </thead>
@@ -146,16 +145,6 @@ export default function TransactionList() {
                   <td style={{ padding: '12px' }}>{tx.amount.toFixed(2)}</td>
                   <td style={{ padding: '12px' }}>{formatCurrency(tx.price_usd)}</td>
                   <td style={{ padding: '12px' }}>{formatCurrency(tx.total_value)}</td>
-                  <td style={{ padding: '12px' }}>
-                    {pnl ? (
-                      <div style={{ color: pnl.amount >= 0 ? '#16a34a' : '#dc2626' }}>
-                        {pnl.amount >= 0 ? '+' : ''}{formatCurrency(pnl.amount)}
-                        <div style={{ fontSize: '12px' }}>
-                          ({pnl.percent >= 0 ? '+' : ''}{pnl.percent.toFixed(2)}%)
-                        </div>
-                      </div>
-                    ) : '-'}
-                  </td>
                   <td style={{ padding: '12px', fontSize: '14px', color: '#4b5563' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Calendar size={14} />{formatDate(tx.timestamp)}

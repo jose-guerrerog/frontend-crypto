@@ -22,12 +22,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable}>
-      <head>
-        <link
-          href="https://cdn.jsdelivr.net/npm/tailwindcss@3.4.1/dist/tailwind.min.css"
-          rel="stylesheet"
-        />
-      </head>
       <body className="font-sans antialiased bg-gray-50 text-gray-900">
         {children}</body>
     </html>
