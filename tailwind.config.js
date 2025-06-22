@@ -7,7 +7,11 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+      },
       colors: {
+        // your existing colors...
         primary: {
           50: '#eff6ff',
           100: '#dbeafe',
