@@ -20,7 +20,6 @@ export default function TransactionModal({
   error,
   portfolioName,
 }: TransactionModalProps) {
-
   const coinOptions = [
     { id: "bitcoin", name: "Bitcoin", symbol: "BTC" },
     { id: "ethereum", name: "Ethereum", symbol: "ETH" },
@@ -41,7 +40,9 @@ export default function TransactionModal({
             <select
               value={form.coin_id}
               onChange={(e) => {
-                const selected = coinOptions.find((c) => c.id === e.target.value);
+                const selected = coinOptions.find(
+                  (c) => c.id === e.target.value
+                );
                 if (selected) {
                   setForm((prev) => ({
                     ...prev,
