@@ -42,4 +42,5 @@ git clone https://github.com/jose-guerrerog/frontend-crypto.git
 cd frontend-crypto
 npm install
 npm run dev
+```
 ⚠️ Make sure the backend is running locally or deployed. 
