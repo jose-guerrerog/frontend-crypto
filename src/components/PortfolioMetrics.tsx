@@ -33,17 +33,26 @@ export default function PortfolioMetrics() {
   const { portfolioMetrics, isLoading } = usePortfolio();
 
   if (isLoading) return <p>Loading portfolio metrics...</p>;
-  if (!portfolioMetrics?.metrics) return <p>No metrics found for this portfolio.</p>;
+  if (!portfolioMetrics?.metrics)
+    return <p>No metrics found for this portfolio.</p>;
 
   const { metrics } = portfolioMetrics;
 
-  const formatCurrency = (value: number) => new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(value);
-  const formatPercentage = (value: number) => `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
+  const formatCurrency = (value: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+    }).format(value);
+  const formatPercentage = (value: number) =>
+    `${value >= 0 ? "+" : ""}${value.toFixed(2)}%`;
 
-  const assetAllocationData = Object.entries(metrics.asset_allocation ?? {}).map(([asset, percentage]) => ({
+  const assetAllocationData = Object.entries(
+    metrics.asset_allocation ?? {}
+  ).map(([asset, percentage]) => ({
     name: asset,
     value: percentage,
-    formatted: typeof percentage === "number" ? `${percentage.toFixed(1)}%` : "",
+    formatted:
+      typeof percentage === "number" ? `${percentage.toFixed(1)}%` : "",
   }));
 
   const performanceData = [
@@ -97,9 +106,12 @@ export default function PortfolioMetrics() {
             <div className="flex items-center mb-2 text-green-800 font-medium">
               <Award size={16} className="mr-2" /> Best Performer
             </div>
-            <p className="text-lg font-bold">{metrics.best_performer.coin_symbol}</p>
+            <p className="text-lg font-bold">
+              {metrics.best_performer.coin_symbol}
+            </p>
             <p className="text-sm text-green-700">
-              {formatPercentage(metrics.best_performer.profit_loss_percentage)} ({formatCurrency(metrics.best_performer.profit_loss)})
+              {formatPercentage(metrics.best_performer.profit_loss_percentage)}{" "}
+              ({formatCurrency(metrics.best_performer.profit_loss)})
             </p>
           </div>
         )}
@@ -109,9 +121,12 @@ export default function PortfolioMetrics() {
             <div className="flex items-center mb-2 text-red-800 font-medium">
               <AlertTriangle size={16} className="mr-2" /> Worst Performer
             </div>
-            <p className="text-lg font-bold">{metrics.worst_performer.coin_symbol}</p>
+            <p className="text-lg font-bold">
+              {metrics.worst_performer.coin_symbol}
+            </p>
             <p className="text-sm text-red-700">
-              {formatPercentage(metrics.worst_performer.profit_loss_percentage)} ({formatCurrency(metrics.worst_performer.profit_loss)})
+              {formatPercentage(metrics.worst_performer.profit_loss_percentage)}{" "}
+              ({formatCurrency(metrics.worst_performer.profit_loss)})
             </p>
           </div>
         )}
@@ -129,17 +144,24 @@ export default function PortfolioMetrics() {
                   cy="50%"
                   outerRadius={80}
                   dataKey="value"
-                  label={({ name, formatted }: any) => `${name.split(" ")[0]} ${formatted}`}
+                  label={({ name, formatted }: any) =>
+                    `${name.split(" ")[0]} ${formatted}`
+                  }
                 >
                   {assetAllocationData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
                   ))}
                 </Pie>
                 <Tooltip content={<CustomTooltip />} />
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-gray-400">No allocation data available</p>
+            <p className="text-center text-gray-400">
+              No allocation data available
+            </p>
           )}
         </div>
         <div>
@@ -162,7 +184,9 @@ export default function PortfolioMetrics() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-center text-gray-400">No performance data available</p>
+            <p className="text-center text-gray-400">
+              No performance data available
+            </p>
           )}
         </div>
       </div>
@@ -175,17 +199,23 @@ export default function PortfolioMetrics() {
           <p className="text-sm text-gray-500">Assets</p>
         </div>
         <div>
-          <p className="text-2xl font-bold">{formatCurrency(metrics?.total_value ?? 0)}</p>
+          <p className="text-2xl font-bold">
+            {formatCurrency(metrics?.total_value ?? 0)}
+          </p>
           <p className="text-sm text-gray-500">Total Value</p>
         </div>
         <div>
-          <p className="text-2xl font-bold">{formatCurrency(metrics?.total_cost ?? 0)}</p>
+          <p className="text-2xl font-bold">
+            {formatCurrency(metrics?.total_cost ?? 0)}
+          </p>
           <p className="text-sm text-gray-500">Total Cost</p>
         </div>
         <div>
           <p
             className={`text-2xl font-bold ${
-              (metrics?.total_profit_loss ?? 0) >= 0 ? "text-green-600" : "text-red-600"
+              (metrics?.total_profit_loss ?? 0) >= 0
+                ? "text-green-600"
+                : "text-red-600"
             }`}
           >
             {formatPercentage(metrics?.profit_loss_percentage ?? 0)}

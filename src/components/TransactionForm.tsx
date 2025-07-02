@@ -1,35 +1,38 @@
-'use client';
+"use client";
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Search, X } from 'lucide-react';
-import { usePortfolio } from '@/contexts/PortfolioContext';
-import { ApiService } from '@/lib/api';
-import { CoinSearchResult, AddTransactionForm } from '@/types';
+import React, { useState, useEffect, useRef } from "react";
+import { Search, X } from "lucide-react";
+import { usePortfolio } from "@/contexts/PortfolioContext";
+import { ApiService } from "@/lib/api";
+import { CoinSearchResult, AddTransactionForm } from "@/types";
 
 interface TransactionFormProps {
   portfolioId: string;
   onClose: () => void;
 }
 
-export default function TransactionForm({ portfolioId, onClose }: TransactionFormProps) {
+export default function TransactionForm({
+  portfolioId,
+  onClose,
+}: TransactionFormProps) {
   const { addTransaction } = usePortfolio();
-  
+
   const [formData, setFormData] = useState<AddTransactionForm>({
-    coin_id: '',
-    coin_name: '',
-    coin_symbol: '',
-    amount: '',
-    price_usd: '',
-    transaction_type: 'buy',
+    coin_id: "",
+    coin_name: "",
+    coin_symbol: "",
+    amount: "",
+    price_usd: "",
+    transaction_type: "buy",
   });
-  
-  const [searchQuery, setSearchQuery] = useState('');
+
+  const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<CoinSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,13 +54,31 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
         setSearchResults(results);
         setShowResults(true);
       } catch (error) {
-        console.error('Search failed:', error);
+        console.error("Search failed:", error);
         setSearchResults([]);
         // Show some default coins if search fails
         setSearchResults([
-          { id: 'bitcoin', name: 'Bitcoin', symbol: 'BTC', thumb: '', market_cap_rank: 1 },
-          { id: 'ethereum', name: 'Ethereum', symbol: 'ETH', thumb: '', market_cap_rank: 2 },
-          { id: 'cardano', name: 'Cardano', symbol: 'ADA', thumb: '', market_cap_rank: 3 },
+          {
+            id: "bitcoin",
+            name: "Bitcoin",
+            symbol: "BTC",
+            thumb: "",
+            market_cap_rank: 1,
+          },
+          {
+            id: "ethereum",
+            name: "Ethereum",
+            symbol: "ETH",
+            thumb: "",
+            market_cap_rank: 2,
+          },
+          {
+            id: "cardano",
+            name: "Cardano",
+            symbol: "ADA",
+            thumb: "",
+            market_cap_rank: 3,
+          },
         ]);
         setShowResults(true);
       } finally {
@@ -73,7 +94,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
   }, [searchQuery]);
 
   const handleCoinSelect = async (coin: CoinSearchResult) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       coin_id: coin.id,
       coin_name: coin.name,
@@ -81,23 +102,23 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
     }));
     setSearchQuery(`${coin.name} (${coin.symbol})`);
     setShowResults(false);
-    
+
     // Try to fetch current price and populate it
     try {
       const prices = await ApiService.getCoinPrices([coin.id]);
       const priceData = prices[coin.id];
       if (priceData) {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           price_usd: priceData.current_price.toString(),
         }));
       }
     } catch (error) {
-      console.error('Failed to fetch price:', error);
+      console.error("Failed to fetch price:", error);
       // Set a default price if fetch fails
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        price_usd: '1.00',
+        price_usd: "1.00",
       }));
     }
   };
@@ -106,15 +127,15 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
     const newErrors: Record<string, string> = {};
 
     if (!formData.coin_id) {
-      newErrors.coin = 'Please select a cryptocurrency';
+      newErrors.coin = "Please select a cryptocurrency";
     }
 
     if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = 'Amount must be greater than 0';
+      newErrors.amount = "Amount must be greater than 0";
     }
 
     if (!formData.price_usd || parseFloat(formData.price_usd) <= 0) {
-      newErrors.price_usd = 'Price must be greater than 0';
+      newErrors.price_usd = "Price must be greater than 0";
     }
 
     setErrors(newErrors);
@@ -122,16 +143,16 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log('sent')
+    console.log("sent");
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     setIsSubmitting(true);
     setErrors({});
-    
+
     try {
       await addTransaction(portfolioId, {
         coin_id: formData.coin_id,
@@ -141,44 +162,57 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
         price_usd: parseFloat(formData.price_usd),
         transaction_type: formData.transaction_type,
       });
-      
+
       onClose();
     } catch (error: any) {
-      console.error('Failed to add transaction:', error);
-      setErrors({ 
-        submit: error?.response?.data?.message || error?.message || 'Failed to add transaction. Please check your connection and try again.' 
+      console.error("Failed to add transaction:", error);
+      setErrors({
+        submit:
+          error?.response?.data?.message ||
+          error?.message ||
+          "Failed to add transaction. Please check your connection and try again.",
       });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleInputChange = (field: keyof AddTransactionForm, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const handleInputChange = (
+    field: keyof AddTransactionForm,
+    value: string
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
     if (errors[field]) {
-      setErrors(prev => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
   };
 
-  const totalValue = formData.amount && formData.price_usd 
-    ? parseFloat(formData.amount) * parseFloat(formData.price_usd)
-    : 0;
+  const totalValue =
+    formData.amount && formData.price_usd
+      ? parseFloat(formData.amount) * parseFloat(formData.price_usd)
+      : 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
+      if (
+        searchInputRef.current &&
+        !searchInputRef.current.contains(event.target as Node)
+      ) {
         setShowResults(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" onClick={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}>
+    <div
+      className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <div className="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Add Transaction</h3>
@@ -193,7 +227,10 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Cryptocurrency Search */}
           <div className="relative" ref={searchInputRef}>
-            <label htmlFor="coin-search" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="coin-search"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Cryptocurrency
             </label>
             <div className="relative">
@@ -204,7 +241,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => {
                   if (searchResults.length > 0) setShowResults(true);
-                  if (!searchQuery) setSearchQuery('bitcoin');
+                  if (!searchQuery) setSearchQuery("bitcoin");
                 }}
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Search for a cryptocurrency..."
@@ -217,7 +254,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
                 </div>
               )}
             </div>
-            
+
             {/* Search Results Dropdown */}
             {showResults && searchResults.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
@@ -229,10 +266,16 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
                     className="w-full px-4 py-2 text-left hover:bg-gray-50 flex items-center space-x-3"
                   >
                     {coin.thumb && (
-                      <img src={coin.thumb} alt={coin.name} className="w-6 h-6" />
+                      <img
+                        src={coin.thumb}
+                        alt={coin.name}
+                        className="w-6 h-6"
+                      />
                     )}
                     <div>
-                      <div className="font-medium text-gray-900">{coin.name}</div>
+                      <div className="font-medium text-gray-900">
+                        {coin.name}
+                      </div>
                       <div className="text-sm text-gray-500">{coin.symbol}</div>
                     </div>
                     {coin.market_cap_rank && (
@@ -244,20 +287,25 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
                 ))}
               </div>
             )}
-            
+
             {errors.coin && (
               <p className="mt-1 text-sm text-red-600">{errors.coin}</p>
             )}
           </div>
 
           <div>
-            <label htmlFor="transaction-type" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="transaction-type"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Transaction Type
             </label>
             <select
               id="transaction-type"
               value={formData.transaction_type}
-              onChange={(e) => handleInputChange('transaction_type', e.target.value)}
+              onChange={(e) =>
+                handleInputChange("transaction_type", e.target.value)
+              }
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
             >
               <option value="buy">Buy</option>
@@ -266,7 +314,10 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
           </div>
 
           <div>
-            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="amount"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Amount {formData.coin_symbol && `(${formData.coin_symbol})`}
             </label>
             <input
@@ -275,7 +326,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
               step="any"
               min="0"
               value={formData.amount}
-              onChange={(e) => handleInputChange('amount', e.target.value)}
+              onChange={(e) => handleInputChange("amount", e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="0.00"
             />
@@ -285,7 +336,10 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
           </div>
 
           <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="price"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Price per Unit (USD)
             </label>
             <input
@@ -294,7 +348,7 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
               step="any"
               min="0"
               value={formData.price_usd}
-              onChange={(e) => handleInputChange('price_usd', e.target.value)}
+              onChange={(e) => handleInputChange("price_usd", e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
               placeholder="0.00"
             />
@@ -306,9 +360,15 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
           {totalValue > 0 && (
             <div className="bg-gray-50 p-3 rounded-md">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Total Value:</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Total Value:
+                </span>
                 <span className="text-lg font-bold text-gray-900">
-                  ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  $
+                  {totalValue.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
             </div>
@@ -333,7 +393,11 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
               disabled={isSubmitting || !formData.coin_id}
               className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? 'Adding...' : `Add ${formData.transaction_type === 'buy' ? 'Buy' : 'Sell'} Transaction`}
+              {isSubmitting
+                ? "Adding..."
+                : `Add ${
+                    formData.transaction_type === "buy" ? "Buy" : "Sell"
+                  } Transaction`}
             </button>
           </div>
         </form>
