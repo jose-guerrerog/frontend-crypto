@@ -2,7 +2,6 @@ import axios from 'axios';
 import { Portfolio, Transaction, CoinSearchResult, CoinPrice, PortfolioMetrics } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://backend-crypto-zjml.onrender.com/api';
-console.log('API_BASE_URL:', API_BASE_URL);
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

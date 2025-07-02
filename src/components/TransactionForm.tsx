@@ -56,7 +56,6 @@ export default function TransactionForm({
       } catch (error) {
         console.error("Search failed:", error);
         setSearchResults([]);
-        // Show some default coins if search fails
         setSearchResults([
           {
             id: "bitcoin",
@@ -103,7 +102,6 @@ export default function TransactionForm({
     setSearchQuery(`${coin.name} (${coin.symbol})`);
     setShowResults(false);
 
-    // Try to fetch current price and populate it
     try {
       const prices = await ApiService.getCoinPrices([coin.id]);
       const priceData = prices[coin.id];
@@ -115,7 +113,6 @@ export default function TransactionForm({
       }
     } catch (error) {
       console.error("Failed to fetch price:", error);
-      // Set a default price if fetch fails
       setFormData((prev) => ({
         ...prev,
         price_usd: "1.00",
@@ -143,7 +140,6 @@ export default function TransactionForm({
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log("sent");
     e.preventDefault();
 
     if (!validateForm()) {
@@ -225,7 +221,6 @@ export default function TransactionForm({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Cryptocurrency Search */}
           <div className="relative" ref={searchInputRef}>
             <label
               htmlFor="coin-search"
@@ -255,7 +250,6 @@ export default function TransactionForm({
               )}
             </div>
 
-            {/* Search Results Dropdown */}
             {showResults && searchResults.length > 0 && (
               <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
                 {searchResults.map((coin) => (
