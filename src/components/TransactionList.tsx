@@ -90,86 +90,68 @@ export default function TransactionList() {
   );
 
   return (
-    <div style={{
-      backgroundColor: 'white',
-      padding: '24px',
-      borderRadius: '12px',
-      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-      marginTop: '24px'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '600' }}>Transactions</h3>
-        <p style={{ color: '#6b7280', fontSize: '14px' }}>
-          {selectedPortfolio.transactions.length} transaction{selectedPortfolio.transactions.length !== 1 ? 's' : ''}
-        </p>
-      </div>
+    <div className="overflow-x-auto bg-white rounded-2xl shadow-md p-6 mt-6">
+  <div className="flex justify-between items-center mb-4">
+    <h3 className="text-lg font-semibold">Transactions</h3>
+    <p className="text-sm text-gray-500">
+      {selectedPortfolio.transactions.length} transaction
+      {selectedPortfolio.transactions.length !== 1 && 's'}
+    </p>
+  </div>
 
-      <div style={{ overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '2px solid #e5e7eb' }}>
-              <th style={{ padding: '12px' }}><SortButton field="coin_name">Cryptocurrency</SortButton></th>
-              <th style={{ padding: '12px' }}>Type</th>
-              <th style={{ padding: '12px' }}><SortButton field="amount">Amount</SortButton></th>
-              <th style={{ padding: '12px' }}>Price</th>
-              <th style={{ padding: '12px' }}><SortButton field="total_value">Total Value</SortButton></th>
-              <th style={{ padding: '12px' }}>Date</th>
-              <th style={{ padding: '12px' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedTransactions.map((tx) => {
-              const pnl = getProfitLoss(tx);
-              return (
-                <tr key={tx.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: 500 }}>{tx.coin_name}</div>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>{tx.coin_symbol}</div>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{
-                      padding: '4px 8px',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      fontWeight: 500,
-                      backgroundColor: tx.transaction_type === 'buy' ? '#dcfce7' : '#fee2e2',
-                      color: tx.transaction_type === 'buy' ? '#15803d' : '#b91c1c',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px'
-                    }}>
-                      {tx.transaction_type === 'buy' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                      {tx.transaction_type.toUpperCase()}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px' }}>{tx.amount.toFixed(2)}</td>
-                  <td style={{ padding: '12px' }}>{formatCurrency(tx.price_usd)}</td>
-                  <td style={{ padding: '12px' }}>{formatCurrency(tx.total_value)}</td>
-                  <td style={{ padding: '12px', fontSize: '14px', color: '#4b5563' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Calendar size={14} />{formatDate(tx.timestamp)}
-                    </div>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <button
-                      onClick={() => handleRemoveTransaction(tx.id)}
-                      style={{
-                        border: 'none',
-                        backgroundColor: 'transparent',
-                        color: '#dc2626',
-                        cursor: 'pointer'
-                      }}
-                      title="Remove"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+  <table className="min-w-full text-sm text-left text-gray-700">
+    <thead className="border-b border-gray-200">
+      <tr>
+        <th className="px-4 py-2"><SortButton field="coin_name">Cryptocurrency</SortButton></th>
+        <th className="px-4 py-2">Type</th>
+        <th className="px-4 py-2"><SortButton field="amount">Amount</SortButton></th>
+        <th className="px-4 py-2">Price</th>
+        <th className="px-4 py-2"><SortButton field="total_value">Total Value</SortButton></th>
+        <th className="px-4 py-2">Date</th>
+        <th className="px-4 py-2">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {sortedTransactions.map((tx) => {
+        const pnl = getProfitLoss(tx);
+        return (
+          <tr key={tx.id} className="border-b border-gray-100 hover:bg-gray-50">
+            <td className="px-4 py-3">
+              <div className="font-medium">{tx.coin_name}</div>
+              <div className="text-xs text-gray-500 uppercase">{tx.coin_symbol}</div>
+            </td>
+            <td className="px-4 py-3">
+              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                ${tx.transaction_type === 'buy'
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700'
+                }`}>
+                {tx.transaction_type === 'buy' ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                <span className="ml-1">{tx.transaction_type.toUpperCase()}</span>
+              </span>
+            </td>
+            <td className="px-4 py-3">{tx.amount.toFixed(2)}</td>
+            <td className="px-4 py-3">{formatCurrency(tx.price_usd)}</td>
+            <td className="px-4 py-3">{formatCurrency(tx.total_value)}</td>
+            <td className="px-4 py-3 text-gray-500 flex items-center gap-1">
+              <Calendar size={14} />
+              {formatDate(tx.timestamp)}
+            </td>
+            <td className="px-4 py-3">
+              <button
+                onClick={() => handleRemoveTransaction(tx.id)}
+                className="text-red-600 hover:text-red-800"
+                title="Remove"
+              >
+                <Trash2 size={16} />
+              </button>
+            </td>
+          </tr>
+        );
+      })}
+    </tbody>
+  </table>
+</div>
+
   );
 }
