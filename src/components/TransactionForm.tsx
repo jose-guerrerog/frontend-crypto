@@ -33,7 +33,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Search for coins with debouncing
   useEffect(() => {
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
@@ -143,7 +142,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
         transaction_type: formData.transaction_type,
       });
       
-      // Success - close the form
       onClose();
     } catch (error: any) {
       console.error('Failed to add transaction:', error);
@@ -157,7 +155,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
 
   const handleInputChange = (field: keyof AddTransactionForm, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
@@ -167,7 +164,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
     ? parseFloat(formData.amount) * parseFloat(formData.price_usd)
     : 0;
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (searchInputRef.current && !searchInputRef.current.contains(event.target as Node)) {
@@ -254,7 +250,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
             )}
           </div>
 
-          {/* Transaction Type */}
           <div>
             <label htmlFor="transaction-type" className="block text-sm font-medium text-gray-700 mb-2">
               Transaction Type
@@ -270,7 +265,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
             </select>
           </div>
 
-          {/* Amount */}
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
               Amount {formData.coin_symbol && `(${formData.coin_symbol})`}
@@ -290,7 +284,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
             )}
           </div>
 
-          {/* Price per unit */}
           <div>
             <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-2">
               Price per Unit (USD)
@@ -310,7 +303,6 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
             )}
           </div>
 
-          {/* Total Value Display */}
           {totalValue > 0 && (
             <div className="bg-gray-50 p-3 rounded-md">
               <div className="flex justify-between items-center">
@@ -322,14 +314,12 @@ export default function TransactionForm({ portfolioId, onClose }: TransactionFor
             </div>
           )}
 
-          {/* Submit Error */}
           {errors.submit && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3">
               <p className="text-sm text-red-600">{errors.submit}</p>
             </div>
           )}
 
-          {/* Form Actions */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
