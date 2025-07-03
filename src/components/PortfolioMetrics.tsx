@@ -31,8 +31,6 @@ const COLORS = [
 export default function PortfolioMetrics() {
   const { portfolioMetrics, isLoading, selectedPortfolio, coinPrices } = usePortfolio();
 
-  console.log("📊 Raw coinPrices object:", coinPrices);
-
   if (isLoading) return <p>Loading portfolio metrics...</p>;
   if (!portfolioMetrics?.metrics) return <p>No metrics found for this portfolio.</p>;
 
@@ -134,7 +132,6 @@ export default function PortfolioMetrics() {
     <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
       <h3 className="text-lg font-semibold mb-5">Portfolio Analytics</h3>
 
-      {/* 🔹 Asset Allocation Pie Chart */}
       <div className="h-60 mb-6">
         <ResponsiveContainer>
           <PieChart>
@@ -142,8 +139,9 @@ export default function PortfolioMetrics() {
               data={assetAllocationData}
               dataKey="value"
               nameKey="name"
-              outerRadius="100%"
-              label={({ name }) => name}
+              outerRadius="70%"
+              label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+              labelLine={false}
             >
               {assetAllocationData.map((_, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -154,7 +152,6 @@ export default function PortfolioMetrics() {
         </ResponsiveContainer>
       </div>
 
-      {/* 🔹 Best/Worst Performer Bar Chart */}
       <div className="h-60 mb-6">
         <ResponsiveContainer>
           <BarChart data={performanceData}>
@@ -171,7 +168,6 @@ export default function PortfolioMetrics() {
         </ResponsiveContainer>
       </div>
 
-      {/* 🔹 Breakdown Table */}
       <div className="overflow-x-auto mt-6">
         <table className="min-w-full text-sm text-left border">
           <thead className="bg-gray-50">
