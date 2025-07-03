@@ -1,5 +1,6 @@
 import React from "react";
 import { AddTransactionForm, TransactionType } from "@/types";
+import { coinOptions} from "@/constants";
 
 interface TransactionModalProps {
   onClose: () => void;
@@ -20,13 +21,6 @@ export default function TransactionModal({
   error,
   portfolioName,
 }: TransactionModalProps) {
-  const coinOptions = [
-    { id: "bitcoin", name: "Bitcoin", symbol: "BTC" },
-    { id: "ethereum", name: "Ethereum", symbol: "ETH" },
-    { id: "cardano", name: "Cardano", symbol: "ADA" },
-    { id: "solana", name: "Solana", symbol: "SOL" },
-    { id: "polkadot", name: "Polkadot", symbol: "DOT" },
-  ];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">

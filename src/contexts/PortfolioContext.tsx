@@ -4,6 +4,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { Portfolio, Transaction, CoinPrice, PortfolioMetrics } from '@/types';
 import { ApiService, WebSocketService } from '@/lib/api';
+import { COINGECKO_ID_MAP } from '@/constants';
 
 interface PortfolioState {
   portfolios: Portfolio[];
@@ -16,14 +17,6 @@ interface PortfolioState {
   wsConnected: boolean;
   backendAvailable: boolean;
 }
-
-const COINGECKO_ID_MAP: Record<string, string> = {
-  btc: 'bitcoin',
-  eth: 'ethereum',
-  sol: 'solana',
-  doge: 'dogecoin',
-  ada: 'cardano',
-};
 
 type PortfolioAction =
   | { type: 'SET_LOADING'; payload: boolean }
@@ -134,7 +127,6 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     wsService = new WebSocketService();
     const handleMessage = (message: any) => {
       if (message.type === 'price_update' && message.data) {
-        console.log('✅ WebSocket price update:', message.data);
         dispatch({ type: 'UPDATE_COIN_PRICES', payload: message.data });
       } else {
         console.warn('⚠️ Unexpected WebSocket message:', message);

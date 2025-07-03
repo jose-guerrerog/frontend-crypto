@@ -14,14 +14,7 @@ import {
   Tooltip,
 } from "recharts";
 import { usePortfolio } from "@/contexts/PortfolioContext";
-
-const COINGECKO_ID_MAP: Record<string, string> = {
-  btc: "bitcoin",
-  eth: "ethereum",
-  sol: "solana",
-  doge: "dogecoin",
-  ada: "cardano",
-};
+import { COINGECKO_ID_MAP } from "@/constants";
 
 const COLORS = [
   "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
@@ -52,7 +45,7 @@ export default function PortfolioMetrics() {
 
   const breakdown = React.useMemo(() => {
     if (!selectedPortfolio?.transactions?.length || !coinPrices || Object.keys(coinPrices).length === 0) {
-      console.warn("⚠️ Missing transactions or coin prices");
+      console.warn("Missing transactions or coin prices");
       return {};
     }
 
@@ -74,10 +67,8 @@ export default function PortfolioMetrics() {
       const geckoId = COINGECKO_ID_MAP[id] || id;
       const coinData = coinPrices[geckoId];
 
-      console.log("🔍 coin_id:", id, "geckoId:", geckoId, "price:", coinData?.usd);
-
       if (!coinData || coinData.usd === undefined) {
-        console.warn(`⚠️ Missing price for ${geckoId}`);
+        console.warn(`Missing price for ${geckoId}`);
         continue;
       }
 
