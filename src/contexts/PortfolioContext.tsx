@@ -17,6 +17,14 @@ interface PortfolioState {
   backendAvailable: boolean;
 }
 
+const COINGECKO_ID_MAP: Record<string, string> = {
+  btc: 'bitcoin',
+  eth: 'ethereum',
+  sol: 'solana',
+  doge: 'dogecoin',
+  ada: 'cardano',
+};
+
 type PortfolioAction =
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'SET_ERROR'; payload: string | null }
@@ -125,8 +133,11 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
     checkBackendStatus();
     wsService = new WebSocketService();
     const handleMessage = (message: any) => {
-      if (message.type === 'price_update' && message.prices) {
-        dispatch({ type: 'UPDATE_COIN_PRICES', payload: message.prices });
+      if (message.type === 'price_update' && message.data) {
+        console.log('✅ WebSocket price update:', message.data);
+        dispatch({ type: 'UPDATE_COIN_PRICES', payload: message.data });
+      } else {
+        console.warn('⚠️ Unexpected WebSocket message:', message);
       }
     };
     wsService.onMessage(handleMessage);
@@ -242,6 +253,7 @@ export function PortfolioProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const subscribeToCoinPrices = useCallback((coinIds: string[]) => {
+    const mappedIds = coinIds.map((id) => COINGECKO_ID_MAP[id] || id);
     if (wsService?.isConnected()) wsService.subscribe(coinIds);
   }, []);
 

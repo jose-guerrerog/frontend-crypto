@@ -106,7 +106,7 @@ export default function PortfolioDashboard() {
 
   return (
     <div className="min-h-screen bg-slate-50 p-5 font-sans">
-      <div className="max-w-6xl mx-auto">
+      <div className="max-w-7xl mx-auto">
         <div className="bg-white p-8 rounded-xl shadow mb-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-bold mb-1">
