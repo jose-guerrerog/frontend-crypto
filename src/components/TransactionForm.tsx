@@ -5,6 +5,8 @@ import { Search, X } from "lucide-react";
 import { usePortfolio } from "@/contexts/PortfolioContext";
 import { ApiService } from "@/lib/api";
 import { CoinSearchResult, AddTransactionForm } from "@/types";
+import { FALLBACK_COIN_RESULTS, DEFAULT_FORM_DATA } from "@/constants/transactions";
+import { validateTransactionForm } from "@/utils/transactions";
 
 interface TransactionFormProps {
   portfolioId: string;
@@ -17,14 +19,7 @@ export default function TransactionForm({
 }: TransactionFormProps) {
   const { addTransaction } = usePortfolio();
 
-  const [formData, setFormData] = useState<AddTransactionForm>({
-    coin_id: "",
-    coin_name: "",
-    coin_symbol: "",
-    amount: "",
-    price_usd: "",
-    transaction_type: "buy",
-  });
+  const [formData, setFormData] = useState<AddTransactionForm>(DEFAULT_FORM_DATA);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<CoinSearchResult[]>([]);
@@ -55,30 +50,7 @@ export default function TransactionForm({
         setShowResults(true);
       } catch (error) {
         console.error("Search failed:", error);
-        setSearchResults([]);
-        setSearchResults([
-          {
-            id: "bitcoin",
-            name: "Bitcoin",
-            symbol: "BTC",
-            thumb: "",
-            market_cap_rank: 1,
-          },
-          {
-            id: "ethereum",
-            name: "Ethereum",
-            symbol: "ETH",
-            thumb: "",
-            market_cap_rank: 2,
-          },
-          {
-            id: "cardano",
-            name: "Cardano",
-            symbol: "ADA",
-            thumb: "",
-            market_cap_rank: 3,
-          },
-        ]);
+        setSearchResults(FALLBACK_COIN_RESULTS);
         setShowResults(true);
       } finally {
         setIsSearching(false);
@@ -121,20 +93,7 @@ export default function TransactionForm({
   };
 
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.coin_id) {
-      newErrors.coin = "Please select a cryptocurrency";
-    }
-
-    if (!formData.amount || parseFloat(formData.amount) <= 0) {
-      newErrors.amount = "Amount must be greater than 0";
-    }
-
-    if (!formData.price_usd || parseFloat(formData.price_usd) <= 0) {
-      newErrors.price_usd = "Price must be greater than 0";
-    }
-
+    const newErrors = validateTransactionForm(formData);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
